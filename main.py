@@ -21,7 +21,7 @@ def get_db():
 def inicio():
     return {"mensaje": "Bienvenido el servidor de ventas esta activo"}
 
-# Esta es la ruta corregida que consulta la base de datos
+# Ruta que consulta la base de datos
 @app.get("/productos")
 def obtener_productos(db: Session = Depends(get_db)):
     # Aquí le pedimos a la DB que traiga todo de la tabla 'producto'
@@ -61,3 +61,17 @@ def eliminar_producto(producto_id: int, db: Session = Depends(get_db)):
     db.delete(producto_db)
     db.commit()
     return {"mensaje": f"Producto con ID {producto_id} eliminado correctamente"}
+
+# RUTA PARA ACTUALIZAR
+@app.put("/productos/{producto_id}")
+def actualizar_producto(producto_id: int, producto_actualizado: ProductoCrear, db: Session = Depends(get_db)):
+    db_producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
+    if not db_producto:
+        return {"error": "Lo siento, el producto con ese ID no existe en el sistema."}
+
+    db_producto.nombre = producto_actualizado.nombre
+    db_producto.precio = producto_actualizado.precio
+    db_producto.cantidad = producto_actualizado.cantidad
+    db.commit()
+    db.refresh(db_producto)
+    return {"mensaje": "¡Producto actualizado con éxito!", "producto_nuevo": db_producto}
