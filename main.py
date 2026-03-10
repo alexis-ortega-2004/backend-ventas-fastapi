@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine, Base
 import models
@@ -8,6 +9,15 @@ from pydantic import BaseModel
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Sistema de ventas")
+
+# Habilitar CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permite que cualquier página (index.html) se conecte
+    allow_credentials=True,
+    allow_methods=["*"],  # Permite GET, POST, PUT, DELETE, etc.
+    allow_headers=["*"],  # Permite enviar cualquier tipo de cabecera
+)
 
 # El "túnel" de conexión
 def get_db():
@@ -31,7 +41,7 @@ def obtener_productos(db: Session = Depends(get_db)):
 class ProductoCrear(BaseModel):
     nombre: str
     precio: float
-    stock: int
+    stock: int = 0
 
     class Config:
         from_attributes = True
