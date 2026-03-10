@@ -1,2 +1,10 @@
 /venv
 /__pycache__
+# Extensiones de VS Code y configuración local
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Base de datos local 
+*.db
+*.sqlite3
