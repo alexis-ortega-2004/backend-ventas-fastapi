@@ -1,24 +1,24 @@
-Sistema de Gestión de Ventas e Inventario - Backend
-Este proyecto es una API REST profesional diseñada para gestionar de manera eficiente el inventario y las ventas de un negocio. Es un sistema CRUD completo desarrollado con tecnologías modernas de Python.
+# Umbral - Sistema de Gestión de Inventario
 
-• Tecnologías Utilizadas
- - FastAPI: Framework de alto rendimiento para construir APIs.
- - SQLAlchemy: ORM para la gestión de base de datos de forma profesional.
- - SQLite: Base de datos ligera y eficiente para almacenamiento local.
- - Pydantic: Para la validación de datos y esquemas.
- - Uvicorn: Servidor ASGI para la ejecución del proyecto.
+-Umbral- es una aplicación web robusta diseñada para el control de inventarios y ventas. Este proyecto nace de la necesidad de ofrecer una interfaz limpia, rápida y funcional para emprendedores, integrando un backend potente con una experiencia de usuario moderna.
 
-• Funcionalidades (CRUD)
- - El sistema permite realizar todas las operaciones fundamentales de un inventario:
- - Create (POST): Registrar nuevos productos.
- - Read (GET): Consultar la lista de productos o buscar uno específico.
- - Update (PUT): Actualizar precios, nombres o cantidades (Recién implementado).
- - Delete (DELETE): Eliminar productos del sistema.
+# Tecnologías Utilizadas
 
- • Cómo ejecutar el proyecto
-Clona el repositorio:
+Este proyecto utiliza el stack FAST-V:
+* Backend: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.10+) - Para una API de alto rendimiento.
+* Frontend: [Vue.js 3](https://vuejs.org/) - Framework progresivo para una interfaz reactiva.
+* Base de Datos: [SQLite](https://www.sqlite.org/) - Motor de base de datos ligero y fiable.
+* Estilos:  CSS3 con animaciones personalizadas para el sistema de notificaciones (Toasts).
 
-- Instala las dependencias:
-- Inicia el servidor:
+# Características Principales
 
-Accede a la documentación interactiva en: http://127.0.0.1:8000/docs
+-   CRUD Completo: Gestión total de productos (Crear, Leer, Actualizar, Eliminar).
+-   Notificaciones en Tiempo Real:** Feedback visual con colores (verde para éxito, rojo para errores) al realizar acciones.
+-   Arquitectura Limpia: Separación de responsabilidades en capas (Modelos, Base de Datos y Rutas).
+-   Confirmación de Seguridad: Prevención de eliminaciones accidentales mediante diálogos de confirmación.
+
+# Instalación y Uso
+
+1. Clonar el repositorio:
+   ```bash
+   git clone [https://github.com/tu-usuario/Umbral.git](https://github.com/tu-usuario/Umbral.git)
