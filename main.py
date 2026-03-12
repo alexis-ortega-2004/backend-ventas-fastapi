@@ -1,9 +1,13 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine, Base
 import models
 from pydantic import BaseModel
+from sqlalchemy import func 
+
+# Esto busca nuevas tablas y las crea sin tocar las anteriores
+models.Base.metadata.create_all(bind=engine)
 
 # Esto asegura que las tablas existan en ventas.db
 Base.metadata.create_all(bind=engine)
@@ -85,3 +89,63 @@ def actualizar_producto(producto_id: int, producto_actualizado: ProductoCrear, d
     db.commit()
     db.refresh(db_producto)
     return {"mensaje": "¡Producto actualizado con éxito!", "producto_nuevo": db_producto}
+
+# Seccion de VENTAS.
+@app.post("/vender/{producto_id}")
+def realizar_venta(producto_id: int, cantidad: int, db: Session = Depends(get_db)):
+    # 1. Busca el producto
+    producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    if producto.stock < cantidad:
+        raise HTTPException(status_code=400, detail=f"Stock insuficiente. Solo quedan {producto.stock}")
+    # menorar producto vendido de stock
+    producto.stock = producto.stock - cantidad
+    # 2. Calcular el total de esta transacción
+    total_operacion = producto.precio * cantidad
+    
+    # 3. Guardar el registro en la nueva tabla 'ventas'
+    nueva_venta = models.Venta(
+        nombre_producto=producto.nombre,
+        cantidad=cantidad,
+        precio_unitario=producto.precio,
+        total_venta=total_operacion
+    )
+    
+    db.add(nueva_venta)
+    db.commit()
+    
+    return {
+        "status": "success",
+        "mensaje": f"Venta de {producto.nombre} registrada",
+        "total": total_operacion
+    }
+
+@app.get("/ventas/total-general")
+def obtener_total_general(db: Session = Depends(get_db)):
+    # Sumamos todos los valores de la columna 'total_venta'
+    total = db.query(func.sum(models.Venta.total_venta)).scalar() or 0
+    return {"total_acumulado": total}
+
+# Endpoint para aumentar el stock (Reabastecimiento)
+@app.put("/productos/{producto_id}/reabastecer")
+def reabastecer_stock(producto_id: int, cantidad_nueva: int, db: Session = Depends(get_db)):
+    # Buscar el producto en la base de datos
+    producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
+    
+    #  Si el producto no existe, lanzamos error 404
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    # Sumamos la nueva cantidad al stock que ya tenemos
+    producto.stock += cantidad_nueva
+    
+    #  Guardamos los cambios
+    db.commit()
+    db.refresh(producto)
+    
+    return {
+        "status": "success",
+        "mensaje": f"Se han añadido {cantidad_nueva} unidades a {producto.nombre}",
+        "stock_actual": producto.stock
+    }
