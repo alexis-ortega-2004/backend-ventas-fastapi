@@ -5,12 +5,16 @@ from database import SessionLocal, engine, Base
 import models
 from pydantic import BaseModel
 from sqlalchemy import func 
+from typing import List 
+from models import Venta
+# --- ESQUEMAS DE VALIDACIÓN (Pydantic) ---
+class ItemPedido(BaseModel):
+    id: int
+    cantidad: int
 
 # Esto busca nuevas tablas y las crea sin tocar las anteriores
 models.Base.metadata.create_all(bind=engine)
 
-# Esto asegura que las tablas existan en ventas.db
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Sistema de ventas")
 
@@ -149,3 +153,70 @@ def reabastecer_stock(producto_id: int, cantidad_nueva: int, db: Session = Depen
         "mensaje": f"Se han añadido {cantidad_nueva} unidades a {producto.nombre}",
         "stock_actual": producto.stock
     }
+
+
+@app.post("/ventas")
+async def crear_venta(datos: dict, db: Session = Depends(get_db)):
+    try:
+        items = datos.get('items', [])
+        total_venta = datos.get('total', 0)
+        
+        lineas_detalle = []
+        unidades_totales = 0
+
+        for item in items:
+            producto_db = db.query(models.Producto).filter(models.Producto.id == item['id']).first()
+            if producto_db:
+                cant = int(item['cantidad'])
+                precio_u = float(item['precio'])
+                
+                # 1. Descontar Stock
+                producto_db.stock -= cant
+                
+                # 2. Crear texto detallado: "Papa (2 x $0.50)"
+                lineas_detalle.append(f"{producto_db.nombre} ({cant}x${precio_u:.2f})")
+                unidades_totales += cant
+
+        # 3. Guardar la venta con el detalle completo
+        nueva_venta = models.Venta(
+            nombre_producto=" + ".join(lineas_detalle), # Ejemplo: "Papa (2x$0.50) + Cola (1x$1.00)"
+            total_venta=float(total_venta),
+            cantidad=unidades_totales,
+            precio_unitario=0.0 # Ponemos 0 porque el detalle ya tiene los precios individuales
+        )
+
+        db.add(nueva_venta)
+        db.commit()
+        return {"status": "success"}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)}
+
+@app.get("/historial")
+async def obtener_historial(db: Session = Depends(get_db)):
+    try:
+        ventas = db.query(models.Venta).all()
+        # Calculamos el total acumulado
+        total_dia = sum(v.total_venta for v in ventas)
+        
+        # IMPORTANTE: Convertimos los objetos de la DB a una lista que la web entienda
+        historial_limpio = []
+        for v in ventas:
+            historial_limpio.append({
+                "id": v.id,
+                "nombre_producto": v.nombre_producto,
+                "cantidad": v.cantidad,
+                "total_venta": v.total_venta,
+                # Convertimos la fecha a texto (Hora:Minuto) para que no falle
+                "fecha": v.fecha.strftime("%H:%M") if v.fecha else "--:--"
+            })
+
+        return {
+            "historial": historial_limpio,
+            "total_acumulado": total_dia
+        }
+    except Exception as e:
+        print(f"Error en historial: {e}")
+        return {"historial": [], "total_acumulado": 0}
+    
+
