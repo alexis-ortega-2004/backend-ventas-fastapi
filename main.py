@@ -7,6 +7,8 @@ from pydantic import BaseModel
 from sqlalchemy import func 
 from typing import List 
 from models import Venta
+import json
+
 # --- ESQUEMAS DE VALIDACIÓN (Pydantic) ---
 class ItemPedido(BaseModel):
     id: int
@@ -220,3 +222,65 @@ async def obtener_historial(db: Session = Depends(get_db)):
         return {"historial": [], "total_acumulado": 0}
     
 
+@app.post("/finalizar-dia")
+async def finalizar_dia(db: Session = Depends(get_db)):
+    try:
+        # 1. Obtenemos todas las ventas antes de borrarlas
+        ventas_actuales = db.query(models.Venta).all()
+        
+        if not ventas_actuales:
+            return {"status": "error", "message": "No hay ventas para cerrar"}
+
+        # 2. Calculamos el total y creamos un resumen de texto
+        total_acumulado = sum(v.total_venta for v in ventas_actuales)
+        # Creamos un resumen simple: "Nombre x Cantidad"
+        resumen = ", ".join([f"{v.nombre_producto} (x{v.cantidad})" for v in ventas_actuales])
+
+        # 3. Guardamos en la nueva tabla de "Cierres Diarios"
+        nuevo_cierre = models.CierreDiario(
+            total_dia=total_acumulado,
+            resumen_productos=resumen
+        )
+        db.add(nuevo_cierre)
+        
+        # 4. AHORA SÍ, borramos las ventas actuales para reiniciar el contador
+        db.query(models.Venta).delete()
+        
+        db.commit()
+        return {"status": "ok", "message": "Día archivado y reiniciado"}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)}
+    
+@app.get("/historial-cierres")
+async def obtener_cierres(db: Session = Depends(get_db)):
+    cierres = db.query(models.CierreDiario).order_by(models.CierreDiario.fecha.desc()).all()
+    return cierres
+
+@app.delete("/historial-cierres/{cierre_id}")
+async def eliminar_cierre(cierre_id: int, db: Session = Depends(get_db)):
+    try:
+        cierre = db.query(models.CierreDiario).filter(models.CierreDiario.id == cierre_id).first()
+        if not cierre:
+            return {"status": "error", "message": "No se encontró el cierre"}
+        
+        db.delete(cierre)
+        db.commit()
+        return {"status": "ok", "message": "Cierre eliminado"}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)}
+    
+@app.delete("/ventas/{venta_id}")
+async def eliminar_venta_actual(venta_id: int, db: Session = Depends(get_db)):
+    try:
+        venta = db.query(models.Venta).filter(models.Venta.id == venta_id).first()
+        if not venta:
+            return {"status": "error", "message": "Venta no encontrada"}
+        
+        db.delete(venta)
+        db.commit()
+        return {"status": "ok", "message": "Venta eliminada del registro de hoy"}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)}

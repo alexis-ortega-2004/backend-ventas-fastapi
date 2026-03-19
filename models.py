@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime, func
 from database import Base
 from datetime import datetime
 
@@ -19,4 +19,10 @@ class Venta(Base):
     total_venta = Column(Float)
     fecha = Column(DateTime, default=datetime.now) # Se pone la hora automáticamente
 
-    
+# Nuevo modelo para guardar los cierres de cada día
+class CierreDiario(Base):
+    __tablename__ = "cierres_diarios"
+    id = Column(Integer, primary_key=True, index=True)
+    fecha = Column(DateTime, default=func.now())
+    total_dia = Column(Float)
+    resumen_productos = Column(String) # Aquí guardaremos
