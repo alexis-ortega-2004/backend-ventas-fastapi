@@ -191,6 +191,7 @@
 
     <script>
         const { createApp } = Vue
+        const API_URL = window.location.origin;
         createApp({
             data() {
                 return {
@@ -211,12 +212,12 @@
             },
             methods: {
                 async obtenerProductos() {
-                    const r = await fetch('http://127.0.0.1:8000/productos');
+                    const r = await fetch(`${API_URL}/productos`);
                     this.listaProductos = await r.json();
                 },
                 async agregarProducto() {
                     if(!this.nuevoProducto.nombre || !this.nuevoProducto.precio) return;
-                    await fetch('http://127.0.0.1:8000/productos', {
+                    await fetch(`${API_URL}/productos`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify(this.nuevoProducto)
@@ -226,7 +227,7 @@
                     this.mostrarToast("Guardado");
                 },
                 async eliminarProducto(id) {
-                    await fetch(`http://127.0.0.1:8000/productos/${id}`, { method: 'DELETE' });
+                    await fetch(`${API_URL}/productos/${id}`, { method: 'DELETE' });
                     this.obtenerProductos();
                     this.mostrarToast("Eliminado", "error");
                 },
@@ -257,7 +258,7 @@
                         total: totalVenta
                     };
                     try {
-                        const response = await fetch('http://127.0.0.1:8000/ventas', {
+                        const response = await fetch(`${API_URL}/ventas`, {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify(datosVenta)
@@ -270,7 +271,7 @@
                     } catch (e) { console.error(e); }
                 },
                 async cargarHistorial() {
-                    const r = await fetch('http://127.0.0.1:8000/historial');
+                    const r = await fetch(`${API_URL}/historial`);
                     const d = await r.json();
                     this.historial = d.historial || [];
                     this.totalDia = parseFloat(d.total_acumulado || 0);
@@ -278,7 +279,7 @@
                 async eliminarVentaActual(id) {
                     if (!confirm("¿Cancelar esta venta del registro de hoy?")) return;
                     try {
-                        const r = await fetch(`http://127.0.0.1:8000/ventas/${id}`, { method: 'DELETE' });
+                        const r = await fetch(`${API_URL}/ventas/${id}`, { method: 'DELETE' });
                         if (r.ok) {
                             this.mostrarToast("Venta cancelada");
                             this.cargarHistorial(); // Refresca lista y TOTAL acumulado
@@ -302,7 +303,7 @@
                 },
                 async finalizarDia() {
                     try {
-                        const r = await fetch('http://127.0.0.1:8000/finalizar-dia', { method: 'POST' });
+                        const r = await fetch(`${API_URL}/finalizar-dia`, { method: 'POST' });
                         if (r.ok) {
                             this.mostrarToast("Día finalizado");
                             this.cargarHistorial();
@@ -312,14 +313,14 @@
                 },
                 async cargarHistorialCierres() {
                     try {
-                        const r = await fetch('http://127.0.0.1:8000/historial-cierres');
+                        const r = await fetch(`${API_URL}/historial-cierres`);
                         this.historialCierres = await r.json();
                     } catch (e) { console.error(e); }
                 },
                 async eliminarCierre(id) {
                     if (!confirm("¿Borrar este registro pasado?")) return;
                     try {
-                        const r = await fetch(`http://127.0.0.1:8000/historial-cierres/${id}`, { method: 'DELETE' });
+                        const r = await fetch(`${API_URL}/historial-cierres/${id}`, { method: 'DELETE' });
                         if (r.ok) {
                             this.mostrarToast("Registro eliminado");
                             this.cargarHistorialCierres();

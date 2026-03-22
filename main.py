@@ -8,6 +8,7 @@ from sqlalchemy import func
 from typing import List 
 from models import Venta
 import json
+from fastapi.responses import FileResponse
 
 # --- ESQUEMAS DE VALIDACIÓN (Pydantic) ---
 class ItemPedido(BaseModel):
@@ -37,9 +38,9 @@ def get_db():
     finally:
         db.close()
 
-@app.get("/")
-def inicio():
-    return {"mensaje": "Bienvenido el servidor de ventas esta activo"}
+#@app.get("/")
+#def inicio():
+    #return {"mensaje": "Bienvenido el servidor de ventas esta activo"}
 
 # Ruta que consulta la base de datos
 @app.get("/productos")
@@ -284,3 +285,12 @@ async def eliminar_venta_actual(venta_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         return {"status": "error", "message": str(e)}
+    
+
+@app.get("/")
+async def read_index():
+    return FileResponse('index.html')
+
+@app.get("/index.html")
+async def read_index_direct():
+    return FileResponse('index.html')
